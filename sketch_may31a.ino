@@ -1,21 +1,34 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <DHT.h>
+
+#define T_PERIOD 90000 // transmition period in ms
+
+// timers vars
+uint32_t myTimer;
+boolean firstStart = true;
+// temp and hum sensors
 const int dhtIndoorPin = 8;
 const int dhtOutdoorPin = 9;
+// button
 const int buttonPin = 10;
-int buttonState = 0;
+boolean buttonState = 0;
 boolean isButtonPressed = false;
-int row_excel = 0;
+// excel vars
+//int row_excel = 0;
+// objects declaration
 LiquidCrystal_I2C lcd( 0x27 , 16 , 2 );
 DHT dhtIn (dhtIndoorPin, DHT22);
 DHT dhtOut (dhtOutdoorPin, DHT22);
 
+
 void setup() {
+
+
   pinMode(buttonPin, INPUT_PULLUP);
-  //  Serial.begin(9600);
-  //  Serial.println("CLEARDATA"); // очистка листа excel
-  //  Serial.println("LABEL,Time,Out Temp, Out Hum, Num Rows"); // заголовки столбцов
+  Serial.begin(9600);
+  //  Serial.println("CLEARDATA"); // clear excel sheet
+  Serial.println("LABEL,Time,Date,t Out,t In,H Out,H in"); // print headers
   dhtIn.begin();
   dhtOut.begin();
   lcd.init();
@@ -23,25 +36,14 @@ void setup() {
 }
 
 void loop() {
-  // устанавливаем курсор в позицию (0,0):
-  //lcd.setCursor(0, 0);
-  // выводим цифры от 0 до 9:
-  //for (int thisChar = 0; thisChar < 10; thisChar++) {
-  //    lcd.print("hello");
-  //    delay(500);
-  //}
+  // all about button
   buttonState = digitalRead(buttonPin);
   if (buttonState == false) {
     isButtonPressed = !isButtonPressed;
     delay(200);
   }
-  //lcd.print(isButtonPressed);
-  //if (buttonState = false) {
-  //  lcd.clear();
-  //
-  //  }
+
   if (isButtonPressed) {
-    //lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("(IN) Temp: ");
     lcd.print(dhtIn.readTemperature());
@@ -50,7 +52,6 @@ void loop() {
     lcd.print(dhtIn.readHumidity());
     delay(50);
   } else {
-    //  lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("(OUT)Temp: ");
     lcd.print(dhtOut.readTemperature());
@@ -60,34 +61,36 @@ void loop() {
     delay(50);
   }
 
-  //  row_excel++; // номер строки + 1
-  //  Serial.print("DATA,TIME,"); // запись в excel текущей даты и времени
-  //  Serial.print(dhtOut.readTemperature());
-  //  Serial.print(",");
-  //  Serial.print(dhtOut.readHumidity());
-  //  Serial.print(",");
-  //  Serial.println(row_excel);
-  //  delay(600000);
+  // delay to send data
+  if (millis() - myTimer >= T_PERIOD) {
+    myTimer += T_PERIOD;
+    sendData();
+
+  }
+  // send data, when arduino starts
+  if (firstStart) {
+    sendData();
+    firstStart = false;
+  }
+}
 
 
-
-
-  //delay(500);
-  //;
-
-
-  // устанавливаем курсор в (16,1):
-  //lcd.setCursor(16, 1);
-  // включаем автоматическую прокрутку
-  //lcd.autoscroll();
-  // печатаем от 0 до 9:
-  //for (int thisChar = 0; thisChar < 10; thisChar++) {
-  //    lcd.print(thisChar);
-  //    delay(500);
-  //}
-  // выключаем автоматическую прокрутку
-  //lcd.noAutoscroll();
-
-  // очищаем экран для следующей итерации
-  //lcd.clear();
+// send data method
+void sendData() {
+//  row_excel++; // increment row
+  Serial.print("DATA"); //send DATA to start logging to excel
+  Serial.print(",");
+  Serial.print("TIME"); // TIME
+  Serial.print(","); //
+  Serial.print("DATE"); // DATE
+  Serial.print(","); // 
+  Serial.print(dhtOut.readTemperature()); // outdoor temp
+  Serial.print(",");
+  Serial.print(dhtIn.readTemperature()); // indoor temp
+  Serial.print(",");
+  Serial.print(dhtOut.readHumidity()); // outdoor humidity
+  Serial.print(",");
+  Serial.print(dhtIn.readHumidity()); // indoor humidity
+  Serial.print(",");
+//  Serial.println(row_excel); // number of excel row
 }
